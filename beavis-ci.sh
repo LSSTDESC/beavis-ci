@@ -77,6 +77,7 @@ HELP=0
 no_push=0
 html=0
 all=0
+repo=0
 src="$0"
 branch='master'
 jupyter=$( which jupyter )
@@ -128,7 +129,7 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-if [ $HELP -gt 0 ]; then
+if [ $HELP -gt 0 ] || [ $repo -eq 0 ]; then
     more $src
     exit 1
 fi
