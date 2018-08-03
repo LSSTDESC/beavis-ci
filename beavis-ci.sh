@@ -109,7 +109,6 @@ fi
 
 echo "Cloning ${repo} into the .beavis workspace:"
 
-
 # Check out a fresh clone in a temporary hidden folder, over-writing
 # any previous edition:
 rm -rf .beavis ; mkdir .beavis ; cd .beavis
@@ -136,6 +135,14 @@ else
     target="rendered"
 fi
 
+# We'll need some badges:
+badge_dir="$PWD/.badges"
+web_dir="https://raw.githubusercontent.com/LSSTDESC/beavis-ci/master/badges/"
+mkdir -p $badge_dir
+curl -s -o $badge_dir/failing.svg $web_dir/failing.svg
+curl -s -o $badge_dir/passing.svg $web_dir/passing.svg
+
+# Get the list of available notebooks:
 notebooks=`find . -path '*/.ipynb_checkpoints/*' -prune -o -name '*.ipynb' -print`
 echo "$notebooks"
 
@@ -167,10 +174,10 @@ for notebook in $notebooks; do
     if [ -e $output ]; then
         outputs+=( $output )
         echo "SUCCESS: $output produced."
-        cp $badge_dir/passing.svg $svgfile
+        cp $badge_dir/passing.svg $filedir/$svgfile
     else
-        echo "WARNING: $output was not created, read the log in $logfile for details."
-        cp $badge_dir/failing.svg $svgfile
+        echo "WARNING: $output was not created, read the log in $filedir/$logfile for details."
+        cp $badge_dir/failing.svg $filedir/$svgfile
     fi
 
 done
