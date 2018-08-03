@@ -22,6 +22,7 @@
 #   -b --branch   Test the notebooks in a dev branch. Outputs still go to "rendered"
 #   -r --repo     Specify the repo name, default to the one we're in
 #   -j --jupyter  Full path to jupyter executable
+#   --kernel      Kernel to have jupyter use
 #   -n --no-push  Only run the notebooks, don't deploy the outputs
 #   --html        Make html outputs instead
 #
@@ -29,8 +30,8 @@
 #
 # EXAMPLES:
 #
-# At NERSC:
-#   ./beavis-ci.sh -u $GITHUB_USERNAME -k $GITHUB_API_KEY -j /usr/common/software/python/3.6-anaconda-4.4/bin/jupyter
+# LSST DESC notebooks at NERSC:
+#   ./beavis-ci.sh -u $GITHUB_USERNAME -k $GITHUB_API_KEY --jupyter /usr/common/software/python/3.6-anaconda-4.4/bin/jupyter --kernel desc-stack
 #
 #-
 # ======================================================================
@@ -43,6 +44,7 @@ src="$0"
 branch='master'
 repo=$( git config --get remote.origin.url | cut -d':' -f2 | cut -d'.' -f1 )
 jupyter=$( which jupyter )
+kernel="python"
 badge_dir="$PWD/badges"
 
 while [ $# -gt 0 ]; do
@@ -79,6 +81,10 @@ while [ $# -gt 0 ]; do
         -j|--jupyter)
             shift
             jupyter="$1"
+            ;;
+        --kernel)
+            shift
+            kernel="$1"
             ;;
     esac
     shift
@@ -149,14 +155,15 @@ for notebook in $notebooks; do
 
     logfile="log/${filename_noext}.log"
     svgfile="log/${filename_noext}.svg"
-    output="${filename_noext}.${ext}"
+    output="$filedir/${filename_noext}.${ext}"
 
     # Run the notebook:
     $jupyter nbconvert \
-        --ExecutePreprocessor.kernel_name=desc-stack \
+        --ExecutePreprocessor.kernel_name=$kernel \
         --ExecutePreprocessor.timeout=600 --to $outputformat \
         --execute $filename &> $logfile
 
+    cd $workingdir
     if [ -e $output ]; then
         outputs+=( $output )
         echo "SUCCESS: $output produced."
