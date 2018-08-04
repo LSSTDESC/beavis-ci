@@ -13,6 +13,7 @@
 #   for web display.
 #
 # INPUTS:
+#   repo          The name of a repo to test, eg LSSTDESC/DC2-analysis
 #
 # OPTIONAL INPUTS:
 #   -h --help     Print this header
@@ -20,7 +21,7 @@
 #   -u --username GITHUB_USERNAME, defaults to the environment variable
 #   -k --key      GITHUB_API_KEY, defaults to the environment variable
 #   -b --branch   Test the notebooks in a dev branch. Outputs still go to "rendered"
-#   -r --repo     Specify the repo name, default to the one we're in
+#   -r --repo     Specify the repo name this way instead
 #   -j --jupyter  Full path to jupyter executable
 #   --kernel      Kernel to have jupyter use
 #   -n --no-push  Only run the notebooks, don't deploy the outputs
@@ -31,7 +32,7 @@
 # EXAMPLES:
 #
 # LSST DESC notebooks at NERSC:
-#   ./beavis-ci.sh -u $GITHUB_USERNAME -k $GITHUB_API_KEY --jupyter /usr/common/software/python/3.6-anaconda-4.4/bin/jupyter --kernel desc-stack
+#   ./beavis-ci.sh LSSTDESC/DC2-analysis -u $GITHUB_USERNAME -k $GITHUB_API_KEY --jupyter /usr/common/software/python/3.6-anaconda-4.4/bin/jupyter --kernel desc-stack
 #
 #
 # LICENSE:
@@ -76,9 +77,9 @@ HELP=0
 no_push=0
 html=0
 all=0
+repo=0
 src="$0"
 branch='master'
-repo=$( git config --get remote.origin.url | cut -d':' -f2 | cut -d'.' -f1 )
 jupyter=$( which jupyter )
 kernel="python"
 
@@ -121,11 +122,14 @@ while [ $# -gt 0 ]; do
             shift
             kernel="$1"
             ;;
+        *)
+            repo="$1"
+            ;;
     esac
     shift
 done
 
-if [ $HELP -gt 0 ]; then
+if [ $HELP -gt 0 ] || [ $repo -eq 0 ]; then
     more $src
     exit 1
 fi
