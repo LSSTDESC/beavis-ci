@@ -200,7 +200,6 @@ else
     git branch -D $target >& /dev/null
     git checkout --orphan $target
     git rm -rf .
-    git add .badges
     git add -f "${outputs[@]}"
     git add -f "${logs[@]}"
     git commit -m "pushed rendered notebooks and log files"
