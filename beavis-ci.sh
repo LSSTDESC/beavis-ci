@@ -17,23 +17,16 @@
 #
 # OPTIONAL INPUTS:
 #   -h --help       Print this header
-#   -r --repo       Specify the repo name this way instead
-#   -b --branch     Test the notebooks in a dev branch. Outputs still go to "rendered"
+#   -b --branch     Test the notebooks in a dev branch. Default is "master". Outputs still always go to "rendered".
 #   -j --jupyter    Full path to jupyter executable
 #   -n --no-commit  Only run the notebooks, do not commit any output
-#   --push          Force push the results to the "rendered" branch
+#   --push          Force push the results to the "rendered" branch. Only work if you have push permission
 #   --html          Make html outputs instead
 #
 # OUTPUTS:
 #
 # EXAMPLES:
-#
-# LSST DESC notebooks at NERSC:
-#   ./beavis-ci.sh LSSTDESC/DC2-analysis --jupyter /usr/common/software/python/3.6-anaconda-4.4/bin/jupyter
-#
-# If you have push permission:
-#   ./beavis-ci.sh LSSTDESC/DC2-analysis --push --jupyter /usr/common/software/python/3.6-anaconda-4.4/bin/jupyter
-#
+#   ./beavis-ci.sh LSSTDESC/DC2-analysis
 #
 # LICENSE:
 # BSD 3-Clause License
@@ -77,10 +70,9 @@ HELP=0
 commit=1
 push=0
 html=0
-repo=0
 src="$0"
 branch='master'
-jupyter=$( which jupyter )
+jupyter=$( command -v jupyter || echo '/usr/common/software/python/3.6-anaconda-4.4/bin/jupyter' )
 
 while [ $# -gt 0 ]; do
     key="$1"
@@ -94,24 +86,12 @@ while [ $# -gt 0 ]; do
         --push)
             push=1
             ;;
-        -u|--username)
-            shift
-            GITHUB_USERNAME="$1"
-            ;;
-        -k|--key)
-            shift
-            GITHUB_API_KEY="$1"
-            ;;
         --html)
             html=1
             ;;
         -b|--branch)
             shift
             branch="$1"
-            ;;
-        -r|--repo)
-            shift
-            repo="$1"
             ;;
         -j|--jupyter)
             shift
@@ -124,23 +104,13 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-if [ $HELP -gt 0 ] || [ $repo -eq 0 ]; then
+if [ $HELP -gt 0 ] || [ -z $repo ]; then
     more $src
     exit 1
 fi
 
 date
 echo "Welcome to beavis-ci: occasional integration and testing"
-
-if [ $push -gt 0 ]; then
-    if [ -z $GITHUB_USERNAME ] || [ -z $GITHUB_API_KEY ]; then
-        echo "No GITHUB_API_KEY and/or GITHUB_USERNAME set, giving up."
-        exit 1
-    else
-        echo "with deployment via GitHub token $GITHUB_API_KEY and username $GITHUB_USERNAME"
-    fi
-fi
-
 echo "Cloning ${repo} into the .beavis workspace:"
 
 # Check out a fresh clone in a temporary hidden folder, over-writing
