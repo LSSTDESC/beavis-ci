@@ -173,7 +173,6 @@ for notebook in $notebooks; do
 
     # Run the notebook:
     $jupyter nbconvert \
-        --ExecutePreprocessor.allow_errors=True \
         --ExecutePreprocessor.timeout=1200 \
         --to $outputformat \
         --execute $filename &> $logfile
