@@ -20,10 +20,8 @@
 #   -r --repo       Specify the repo name this way instead
 #   -b --branch     Test the notebooks in a dev branch. Outputs still go to "rendered"
 #   -j --jupyter    Full path to jupyter executable
-#   -n --no-commit  Only run the notebooks, don't commit the outputs
-#   --push          Push the results to rendered
-#   -u --username   GITHUB_USERNAME, defaults to the environment variable
-#   -k --key        GITHUB_API_KEY, defaults to the environment variable
+#   -n --no-commit  Only run the notebooks, do not commit any output
+#   --push          Force push the results to the "rendered" branch
 #   --html          Make html outputs instead
 #
 # OUTPUTS:
@@ -34,7 +32,7 @@
 #   ./beavis-ci.sh LSSTDESC/DC2-analysis --jupyter /usr/common/software/python/3.6-anaconda-4.4/bin/jupyter
 #
 # If you have push permission:
-#   ./beavis-ci.sh LSSTDESC/DC2-analysis --push -u $GITHUB_USERNAME -k $GITHUB_API_KEY --jupyter /usr/common/software/python/3.6-anaconda-4.4/bin/jupyter
+#   ./beavis-ci.sh LSSTDESC/DC2-analysis --push --jupyter /usr/common/software/python/3.6-anaconda-4.4/bin/jupyter
 #
 #
 # LICENSE:
@@ -147,13 +145,16 @@ echo "Cloning ${repo} into the .beavis workspace:"
 
 # Check out a fresh clone in a temporary hidden folder, over-writing
 # any previous edition:
-rm -rf .beavis ; mkdir .beavis ; cd .beavis
-git clone git@github.com:${repo}.git
+mkdir -p .beavis
+cd .beavis
 repo_dir=`basename $repo`
+rm -rf ${repo_dir}
+git clone git@github.com:${repo}.git
 if [ -e $repo_dir ]; then
     cd $repo_dir
     git checkout $branch
 else
+    echo "Failed to clone ${repo}! Abort!"
     exit 1
 fi
 
@@ -229,12 +230,12 @@ else
     git branch -D $target >& /dev/null
     git checkout --orphan $target
     git rm -rf .
+    git add .badges
     git add -f "${outputs[@]}"
     git add -f "${logs[@]}"
     git commit -m "pushed rendered notebooks and log files"
     if [ $push -gt 0 ]; then
-        git push -q -f \
-            https://${GITHUB_USERNAME}:${GITHUB_API_KEY}@github.com/${repo} $target
+        git push -q -f origin $target
     fi
     
     echo "Done!"
@@ -248,7 +249,7 @@ fi
 
 echo "beavis-ci finished!"
 if [ $push -gt 0 ]; then
-    echo "View results at  https://github.com/${repo}/tree/${target}/"
+    echo "View results at https://github.com/${repo}/tree/${target}/"
 fi
 
 cd ../../
