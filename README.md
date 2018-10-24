@@ -22,6 +22,12 @@ Additional, optional, inputs to the script are described in the script header, w
 beavis-ci.sh -h
 ```
 
+Here's an example cron job, that runs `beavis-ci.sh` every 6 hours, at 5 minutes to the hour:
+```
+55  3,9,15,21  *  *  * ( bin/beavis-ci.sh LSSTDESC/DC2-analysis -k <GITHUB_API_KEY> -u <username> )
+```
+(To schedule, and then adjust, your cron jobs, do `crontab -e` - and make a note of which host you are on!)
+
 > For `beavis` to be able to push the rendered notebooks to your GitHub repo, you'll need to provide your `GITHUB_USERNAME` and `GITHUB_API_KEY`, either as environment variables or with the `-u` and `-k` options.
 
 > You might like to copy the [example README.rst file]() in the `tests` directory, to make your own index table of notebooks with build passing/failing badges.  
