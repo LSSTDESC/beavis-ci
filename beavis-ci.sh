@@ -16,24 +16,17 @@
 #   repo          The name of a repo to test, eg LSSTDESC/DC2-analysis
 #
 # OPTIONAL INPUTS:
-#   -h --help     Print this header
-#   -a --all      Run all the notebooks in the folder instead of the ones in the README
-#   -u --username GITHUB_USERNAME, defaults to the environment variable
-#   -k --key      GITHUB_API_KEY, defaults to the environment variable
-#   -b --branch   Test the notebooks in a dev branch. Outputs still go to "rendered"
-#   -r --repo     Specify the repo name this way instead
-#   -j --jupyter  Full path to jupyter executable
-#   --kernel      Kernel to have jupyter use
-#   -n --no-push  Only run the notebooks, don't deploy the outputs
-#   --html        Make html outputs instead
+#   -h --help       Print this header
+#   -b --branch     Test the notebooks in a dev branch. Default is "master". Outputs still always go to "rendered".
+#   -j --jupyter    Full path to jupyter executable
+#   -n --no-commit  Only run the notebooks, do not commit any output
+#   --push          Force push the results to the "rendered" branch. Only work if you have push permission
+#   --html          Make html outputs instead
 #
 # OUTPUTS:
 #
 # EXAMPLES:
-#
-# LSST DESC notebooks at NERSC:
-#   ./beavis-ci.sh LSSTDESC/DC2-analysis -u $GITHUB_USERNAME -k $GITHUB_API_KEY --jupyter /usr/common/software/python/3.6-anaconda-4.4/bin/jupyter --kernel desc-stack
-#
+#   ./beavis-ci.sh LSSTDESC/DC2-analysis
 #
 # LICENSE:
 # BSD 3-Clause License
@@ -74,14 +67,12 @@
 # ======================================================================
 
 HELP=0
-no_push=0
+commit=1
+push=0
 html=0
-all=0
-repo=0
 src="$0"
 branch='master'
-jupyter=$( which jupyter )
-kernel="python"
+jupyter=$( command -v jupyter || echo '/usr/common/software/python/3.6-anaconda-4.4/bin/jupyter' )
 
 while [ $# -gt 0 ]; do
     key="$1"
@@ -89,19 +80,11 @@ while [ $# -gt 0 ]; do
         -h|--help)
             HELP=1
             ;;
-        -n|--no-push)
-            no_push=1
+        -n|--no-commit)
+            commit=0
             ;;
-        -a|--all)
-            all=1
-            ;;
-        -u|--username)
-            shift
-            GITHUB_USERNAME="$1"
-            ;;
-        -k|--key)
-            shift
-            GITHUB_API_KEY="$1"
+        --push)
+            push=1
             ;;
         --html)
             html=1
@@ -110,17 +93,9 @@ while [ $# -gt 0 ]; do
             shift
             branch="$1"
             ;;
-        -r|--repo)
-            shift
-            repo="$1"
-            ;;
         -j|--jupyter)
             shift
             jupyter="$1"
-            ;;
-        --kernel)
-            shift
-            kernel="$1"
             ;;
         *)
             repo="$1"
@@ -129,34 +104,27 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-if [ $HELP -gt 0 ] || [ $repo -eq 0 ]; then
+if [ $HELP -gt 0 ] || [ -z $repo ]; then
     more $src
     exit 1
 fi
 
 date
 echo "Welcome to beavis-ci: occasional integration and testing"
-
-if [ $no_push -eq 0 ]; then
-    if [ -z $GITHUB_USERNAME ] || [ -z $GITHUB_API_KEY ]; then
-        echo "No GITHUB_API_KEY and/or GITHUB_USERNAME set, giving up."
-        exit 1
-    else
-        echo "with deployment via GitHub token $GITHUB_API_KEY and username $GITHUB_USERNAME"
-    fi
-fi
-
 echo "Cloning ${repo} into the .beavis workspace:"
 
 # Check out a fresh clone in a temporary hidden folder, over-writing
 # any previous edition:
-rm -rf .beavis ; mkdir .beavis ; cd .beavis
-git clone git@github.com:${repo}.git
+mkdir -p .beavis
+cd .beavis
 repo_dir=`basename $repo`
+rm -rf ${repo_dir}
+git clone git@github.com:${repo}.git
 if [ -e $repo_dir ]; then
     cd $repo_dir
     git checkout $branch
 else
+    echo "Failed to clone ${repo}! Abort!"
     exit 1
 fi
 
@@ -205,8 +173,8 @@ for notebook in $notebooks; do
 
     # Run the notebook:
     $jupyter nbconvert \
-        --ExecutePreprocessor.kernel_name=$kernel \
-        --ExecutePreprocessor.timeout=600 --to $outputformat \
+        --ExecutePreprocessor.timeout=1200 \
+        --to $outputformat \
         --execute $filename &> $logfile
 
     cd $workingdir
@@ -221,7 +189,7 @@ for notebook in $notebooks; do
 
 done
 
-if [ $no_push -gt 0 ]; then
+if [ $commit -eq 0 ]; then
     sleep 0
 
 else
@@ -234,11 +202,11 @@ else
     git add -f "${outputs[@]}"
     git add -f "${logs[@]}"
     git commit -m "pushed rendered notebooks and log files"
-    git push -q -f \
-        https://${GITHUB_USERNAME}:${GITHUB_API_KEY}@github.com/${repo} $target
+    if [ $push -gt 0 ]; then
+        git push -q -f origin $target
+    fi
+    
     echo "Done!"
-    git checkout master
-
     echo ""
     echo "Please read the above output very carefully to see that things are OK. To check we've come back to our starting point correctly, here's a git status:"
     echo ""
@@ -247,8 +215,10 @@ else
 
 fi
 
-echo "beavis-ci finished: view the results at "
-echo "    https://github.com/${repo}/tree/${target}/"
+echo "beavis-ci finished!"
+if [ $push -gt 0 ]; then
+    echo "View results at https://github.com/${repo}/tree/${target}/"
+fi
 
 cd ../../
 date
