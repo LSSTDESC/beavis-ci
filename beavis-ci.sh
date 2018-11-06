@@ -16,12 +16,15 @@
 #   repo          The name of a repo to test, eg LSSTDESC/DC2-analysis
 #
 # OPTIONAL INPUTS:
-#   -h --help       Print this header
-#   -b --branch     Test the notebooks in a dev branch. Default is "master". Outputs still always go to "rendered".
-#   -j --jupyter    Full path to jupyter executable
-#   -n --no-commit  Only run the notebooks, do not commit any output
-#   --push          Force push the results to the "rendered" branch. Only work if you have push permission
-#   --html          Make html outputs instead
+#   -h --help        Print this header
+#   -b --branch      Test the notebooks in a dev branch. Default is "master". Outputs will go to "rendered/$branch"
+#   -k --kernel      Enforce a specific kernel
+#   -n --notebooks   Run on notebooks that match this. Default is '*'
+#   -w --working-dir Working directory. Default is '.beavis'
+#   -j --jupyter     Full path to jupyter executable
+#   --no-commit      Only run the notebooks, do not commit any output
+#   --push           Force push the results to the "rendered" branch. Only work if you have push permission
+#   --html           Make html outputs instead
 #
 # OUTPUTS:
 #
@@ -66,21 +69,24 @@
 #-
 # ======================================================================
 
-HELP=0
+help=0
 commit=1
 push=0
 html=0
 src="$0"
 branch='master'
+output_branch_default='rendered'
+notebook_name='*'
+working_dir='.beavis'
 jupyter=$( command -v jupyter || echo '/usr/common/software/python/3.6-anaconda-4.4/bin/jupyter' )
 
 while [ $# -gt 0 ]; do
     key="$1"
     case $key in
         -h|--help)
-            HELP=1
+            help=1
             ;;
-        -n|--no-commit)
+        --no-commit)
             commit=0
             ;;
         --push)
@@ -97,6 +103,18 @@ while [ $# -gt 0 ]; do
             shift
             jupyter="$1"
             ;;
+        -k|--kernel)
+            shift
+            kernel="$1"
+            ;;
+        -n|--notebooks)
+            shift
+            notebook_name="$1"
+            ;;
+        -w|--working-dir)
+            shift
+            working_dir="$1"
+            ;;
         *)
             repo="$1"
             ;;
@@ -104,53 +122,64 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-if [ $HELP -gt 0 ] || [ -z $repo ]; then
+if [ $help -gt 0 ] || [ -z $repo ]; then
     more $src
     exit 1
 fi
 
 date
 echo "Welcome to beavis-ci: occasional integration and testing"
-echo "Cloning ${repo} into the .beavis workspace:"
+echo "Cloning ${repo}/${branch} into the ${working_dir} workspace:"
 
 # Check out a fresh clone in a temporary hidden folder, over-writing
 # any previous edition:
-mkdir -p .beavis
-cd .beavis
+mkdir -p ${working_dir}
+cd ${working_dir}
 repo_dir=`basename $repo`
 rm -rf ${repo_dir}
-git clone git@github.com:${repo}.git
+git clone -b ${branch} git@github.com:${repo}.git
 if [ -e $repo_dir ]; then
     cd $repo_dir
-    git checkout $branch
+    repo_full_path=`pwd`
 else
-    echo "Failed to clone ${repo}! Abort!"
+    echo "Failed to clone ${repo}/${branch}! Abort!"
     exit 1
 fi
 
-workingdir=`pwd`
+# set target output branch
+target="${output_branch_default}"
+if [ "$branch" -ne 'master']; then
+    target="${target}/${branch}"
+fi
 
+# set html or notebook option
 if [ $html -gt 0 ]; then
-    echo "Making static HTML pages from the master branch notebooks:"
+    echo "Making static HTML pages..."
     outputformat="HTML"
     ext="html"
-    target="html"
+    target="${target}/html"
 else
-    echo "Rendering the master branch notebooks:"
+    echo "Rendering notebooks..."
     outputformat="notebook"
     ext="nbconvert.ipynb"
-    target="rendered"
+fi
+
+# set kernel option
+if [ -z $kernel ]; then
+    kernel_option=""
+else
+    kernel_option="--ExecutePreprocessor.kernel_name=$kernel"
 fi
 
 # We'll need some badges:
-badge_dir="$PWD/.badges"
-web_dir="https://raw.githubusercontent.com/LSSTDESC/beavis-ci/master/badges/"
+badge_dir='.badges'
+web_dir='https://raw.githubusercontent.com/LSSTDESC/beavis-ci/master/badges/'
 mkdir -p $badge_dir
 curl -s -o $badge_dir/failing.svg $web_dir/failing.svg
 curl -s -o $badge_dir/passing.svg $web_dir/passing.svg
 
 # Get the list of available notebooks:
-notebooks=`find . -path '*/.ipynb_checkpoints/*' -prune -o -name '*.ipynb' -print`
+notebooks=`find . -path '*/.ipynb_checkpoints/*' -prune -o -name "${notebook_name}.ipynb" -print`
 echo "$notebooks"
 
 # Now loop over notebooks, running them one by one:
@@ -162,7 +191,7 @@ for notebook in $notebooks; do
     filedir=`dirname $notebook`
     filename_noext=${filename%.*}
 
-    cd $workingdir
+    cd $repo_full_path
     cd $filedir
     mkdir -p log
     logs+=( "$filedir/log" )
@@ -172,12 +201,12 @@ for notebook in $notebooks; do
     output="$filedir/${filename_noext}.${ext}"
 
     # Run the notebook:
-    $jupyter nbconvert \
+    $jupyter nbconvert $kernel_option \
         --ExecutePreprocessor.timeout=1200 \
         --to $outputformat \
         --execute $filename &> $logfile
 
-    cd $workingdir
+    cd $repo_full_path
     if [ -e $output ]; then
         outputs+=( $output )
         echo "SUCCESS: $output produced."
@@ -193,9 +222,9 @@ if [ $commit -eq 0 ]; then
     sleep 0
 
 else
-    echo "Attempting to push the rendered outputs to GitHub in an orphan branch..."
+    echo "Attempting to push the rendered outputs to GitHub in an orphan branch $target"
 
-    cd $workingdir
+    cd $repo_full_path
     git branch -D $target >& /dev/null
     git checkout --orphan $target
     git rm -rf .
@@ -205,7 +234,7 @@ else
     if [ $push -gt 0 ]; then
         git push -q -f origin $target
     fi
-    
+
     echo "Done!"
     echo ""
     echo "Please read the above output very carefully to see that things are OK. To check we've come back to our starting point correctly, here's a git status:"
