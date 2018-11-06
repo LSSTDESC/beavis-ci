@@ -148,7 +148,7 @@ fi
 
 # set target output branch
 target="${output_branch_default}"
-if [ "$branch" -ne 'master' ]; then
+if [ "$branch" != "master" ]; then
     target="${target}/${branch}"
 fi
 
