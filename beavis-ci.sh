@@ -17,7 +17,7 @@
 #
 # OPTIONAL INPUTS:
 #   -h --help        Print this header
-#   -b --branch      Test the notebooks in a dev branch. Default is "master". Outputs will go to "rendered/$branch"
+#   -b --branch      Test the notebooks in a dev branch. Default is "master". Outputs will go to "rendered-$branch"
 #   -k --kernel      Enforce a specific kernel
 #   -n --notebooks   Run on notebooks that match this. Default is '*'
 #   -w --working-dir Working directory. Default is '.beavis'
