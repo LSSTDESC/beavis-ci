@@ -150,7 +150,7 @@ fi
 # set target output branch
 target="${output_branch_default}"
 if [ "$branch" != "master" ]; then
-    target="${target}/${branch}"
+    target="${target}-${branch}"
 fi
 
 # set html or notebook option
@@ -158,7 +158,7 @@ if [ $html -gt 0 ]; then
     echo "Making static HTML pages..."
     outputformat="HTML"
     ext="html"
-    target="${target}/html"
+    target="${target}-html"
 else
     echo "Rendering notebooks..."
     outputformat="notebook"
