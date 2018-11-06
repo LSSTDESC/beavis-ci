@@ -128,6 +128,7 @@ if [ $help -gt 0 ] || [ -z $repo ]; then
 fi
 
 date
+original_pwd=`pwd`
 echo "Welcome to beavis-ci: occasional integration and testing"
 echo "Cloning ${repo}/${branch} into the ${working_dir} workspace:"
 
@@ -185,6 +186,7 @@ echo "$notebooks"
 # Now loop over notebooks, running them one by one:
 declare -a outputs
 declare -a logs
+SUCCESS=1
 for notebook in $notebooks; do
 
     filename=`basename $notebook`
@@ -212,8 +214,9 @@ for notebook in $notebooks; do
         echo "SUCCESS: $output produced."
         cp $badge_dir/passing.svg $filedir/$svgfile
     else
-        echo "WARNING: $output was not created, read the log in $filedir/$logfile for details."
+        echo "WARNING: failed to produce $output. See $repo_full_path/$filedir/$logfile for details."
         cp $badge_dir/failing.svg $filedir/$svgfile
+        SUCCESS=0
     fi
 
 done
@@ -227,24 +230,19 @@ else
     cd $repo_full_path
     git branch -D $target >& /dev/null
     git checkout --orphan $target
-    git rm -rf .
+    git rm -rf . >& /dev/null
     git add -f "${outputs[@]}"
     git add -f "${logs[@]}"
     git commit -m "pushed rendered notebooks and log files"
     if [ $push -gt 0 ]; then
         git push -q -f origin $target
     fi
-
-    echo "Done!"
-    echo ""
-    echo "Please read the above output very carefully to see that things are OK. To check we've come back to our starting point correctly, here's a git status:"
-    echo ""
-
-    git status
-
 fi
 
 echo "beavis-ci finished!"
+if [ $SUCCESS -eq 0 ]; then
+    echo "WARNING: Some notebooks did not rendered successfully!"
+fi
 if [ $push -gt 0 ]; then
     echo "View results at https://github.com/${repo}/tree/${target}/"
 fi
