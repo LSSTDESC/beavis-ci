@@ -204,6 +204,7 @@ for notebook in $notebooks; do
 
     # Run the notebook:
     $jupyter nbconvert $kernel_option \
+        --ExecutePreprocessor.startup_timeout=120 \
         --ExecutePreprocessor.timeout=1200 \
         --to $outputformat \
         --execute $filename &> $logfile
