@@ -9,8 +9,8 @@
 #
 # COMMENTS:
 #   Makes "rendered" versions of all the notebooks listed in a folder
-#   and deploys them to a "rendered" orphan branch, pushed to GitHub
-#   for web display.
+#   and, optionally, deploys them to a "rendered" orphan branch, pushed
+#   to GitHub for web display.
 #
 # INPUTS:
 #   repo          The name of a repo to test, eg LSSTDESC/DC2-analysis
@@ -22,7 +22,7 @@
 #   -n --notebooks   Run on notebooks that match this. Default is '*'
 #   -w --working-dir Working directory. Default is '.beavis'
 #   -j --jupyter     Full path to jupyter executable
-#   --no-commit      Only run the notebooks, do not commit any output
+#   --no-commit      Just run the notebooks, don't commit them
 #   --push           Force push the results to the "rendered" branch. Only work if you have push permission
 #   --html           Make html outputs instead
 #   --png            Use PNG badges rather than SVG ones
