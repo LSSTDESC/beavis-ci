@@ -22,7 +22,7 @@
 #   -n --notebooks   Run on notebooks that match this. Default is '*'
 #   -w --working-dir Working directory. Default is '.beavis'
 #   -j --jupyter     Full path to jupyter executable
-#   --no-commit      Just run the notebooks, don't commit them
+#   --no-commit      Only run the notebooks, do not commit any output
 #   --push           Force push the results to the "rendered" branch. Only work if you have push permission
 #   --html           Make html outputs instead
 #   --png            Use PNG badges rather than SVG ones
@@ -158,7 +158,7 @@ if [ "$branch" != "master" ]; then
     target="${target}-${branch}"
 fi
 
-# set html or notebook option
+# set PNG or SVG badge format
 if [ $png -gt 0 ]; then
     echo "Using PNG badges instead of SVG defaults"
     bxt="png"

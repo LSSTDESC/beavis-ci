@@ -14,9 +14,20 @@ See the table below for links to the notebook code, and an auto-rendered view of
      - Links
      - Owner
 
+
    * - Smoke Test
      - Simplest possible notebook to test CI script.
-     - `ipynb <https://github.com/LSSTDESC/beavis-ci/blob/master/tests/smoke_test.ipynb>`_, `rendered <https://nbviewer.jupyter.org/github/LSSTDESC/beavis-ci/blob/rendered/tests/smoke_test.nbconvert.ipynb>`_
+     - `ipynb <smoke_test.ipynb>`_, `rendered <https://nbviewer.jupyter.org/github/LSSTDESC/beavis-ci/blob/rendered/tests/smoke_test.nbconvert.ipynb>`_
+
+        .. image:: https://github.com/LSSTDESC/beavis-ci/blob/rendered/tests/log/smoke_test.svg
+            :target: https://github.com/LSSTDESC/beavis-ci/blob/rendered/tests/log/smoke_test.log
+
+     - `Phil Marshall <https://github.com/LSSTDESC/beavis-ci/issues/new?body=@drphilmarshall>`_
+
+
+   * - Smoke Test, with PNG Badges and Sphinx-friendly RST
+     - Simplest possible notebook to test CI script.
+     - `ipynb <https://github.com/LSSTDESC/beavis-ci/blob/master/tests/smoke_test.ipynb>`__, `rendered <https://nbviewer.jupyter.org/github/LSSTDESC/beavis-ci/blob/rendered/tests/smoke_test.nbconvert.ipynb>`__
 
        .. raw:: html
 
@@ -25,4 +36,4 @@ See the table below for links to the notebook code, and an auto-rendered view of
              </img>
           </a>
 
-     - `Phil Marshall <https://github.com/LSSTDESC/beavis-ci/issues/new?body=@drphilmarshall>`_
+     - `Phil Marshall <https://github.com/LSSTDESC/beavis-ci/issues/new?body=@drphilmarshall>`__
