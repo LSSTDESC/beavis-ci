@@ -32,7 +32,7 @@ See the table below for links to the notebook code, and an auto-rendered view of
        .. raw:: html
 
           <a href="https://github.com/LSSTDESC/beavis-ci/blob/rendered/tests/log/smoke_test.log">
-             <img width="72" height="16" src="https://raw.githubusercontent.com/LSSTDESC/beavis-ci/blob/rendered/tests/log/smoke_test.png">
+             <img width="72" height="16" src="https://raw.githubusercontent.com/LSSTDESC/beavis-ci/rendered/tests/log/smoke_test.png">
              </img>
           </a>
 
