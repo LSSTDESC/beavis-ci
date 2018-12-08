@@ -9,8 +9,8 @@
 #
 # COMMENTS:
 #   Makes "rendered" versions of all the notebooks listed in a folder
-#   and deploys them to a "rendered" orphan branch, pushed to GitHub
-#   for web display.
+#   and, optionally, deploys them to a "rendered" orphan branch, pushed
+#   to GitHub for web display.
 #
 # INPUTS:
 #   repo          The name of a repo to test, eg LSSTDESC/DC2-analysis
@@ -25,6 +25,7 @@
 #   --no-commit      Only run the notebooks, do not commit any output
 #   --push           Force push the results to the "rendered" branch. Only work if you have push permission
 #   --html           Make html outputs instead
+#   --png            Use PNG badges rather than SVG ones
 #
 # OUTPUTS:
 #
@@ -73,6 +74,7 @@ help=0
 commit=1
 push=0
 html=0
+png=0
 src="$0"
 branch='master'
 output_branch_default='rendered'
@@ -94,6 +96,9 @@ while [ $# -gt 0 ]; do
             ;;
         --html)
             html=1
+            ;;
+        --png)
+            png=1
             ;;
         -b|--branch)
             shift
@@ -153,6 +158,14 @@ if [ "$branch" != "master" ]; then
     target="${target}-${branch}"
 fi
 
+# set PNG or SVG badge format
+if [ $png -gt 0 ]; then
+    echo "Using PNG badges instead of SVG defaults"
+    bxt="png"
+else
+    bxt="svg"
+fi
+
 # set html or notebook option
 if [ $html -gt 0 ]; then
     echo "Making static HTML pages..."
@@ -176,8 +189,8 @@ fi
 badge_dir='.badges'
 web_dir='https://raw.githubusercontent.com/LSSTDESC/beavis-ci/master/badges/'
 mkdir -p $badge_dir
-curl -s -o $badge_dir/failing.svg $web_dir/failing.svg
-curl -s -o $badge_dir/passing.svg $web_dir/passing.svg
+curl -s -o $badge_dir/failing.$bxt $web_dir/failing.$bxt
+curl -s -o $badge_dir/passing.$bxt $web_dir/passing.$bxt
 
 # Get the list of available notebooks:
 notebooks=`find . -path '*/.ipynb_checkpoints/*' -prune -o -name "${notebook_name}.ipynb" -print`
@@ -199,7 +212,7 @@ for notebook in $notebooks; do
     logs+=( "$filedir/log" )
 
     logfile="log/${filename_noext}.log"
-    svgfile="log/${filename_noext}.svg"
+    badgefile="log/${filename_noext}.${bxt}"
     output="$filedir/${filename_noext}.${ext}"
 
     # Run the notebook:
@@ -213,10 +226,10 @@ for notebook in $notebooks; do
     if [ -e $output ]; then
         outputs+=( $output )
         echo "SUCCESS: $output produced."
-        cp $badge_dir/passing.svg $filedir/$svgfile
+        cp $badge_dir/passing.${bxt} $filedir/$badgefile
     else
         echo "WARNING: failed to produce $output. See $repo_full_path/$filedir/$logfile for details."
-        cp $badge_dir/failing.svg $filedir/$svgfile
+        cp $badge_dir/failing.${bxt} $filedir/$badgefile
         SUCCESS=0
     fi
 
