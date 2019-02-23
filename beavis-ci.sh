@@ -20,6 +20,7 @@
 #   -b --branch      Test the notebooks in a dev branch. Default is "master". Outputs will go to "rendered-$branch"
 #   -k --kernel      Enforce a specific kernel
 #   -n --notebooks   Run on notebooks that match this. Default is '*'
+#   -d --dir         Run on notebooks that are in this directory. Default is '.'
 #   -w --working-dir Working directory. Default is '.beavis'
 #   -j --jupyter     Full path to jupyter executable
 #   --no-commit      Only run the notebooks, do not commit any output
@@ -79,6 +80,7 @@ src="$0"
 branch='master'
 output_branch_default='rendered'
 notebook_name='*'
+notebook_dir='.'
 working_dir='.beavis'
 jupyter=$( command -v jupyter || echo '/usr/common/software/python/3.6-anaconda-4.4/bin/jupyter' )
 
@@ -111,6 +113,10 @@ while [ $# -gt 0 ]; do
         -k|--kernel)
             shift
             kernel="$1"
+            ;;
+        -d|--dir)
+            shift
+            notebook_dir="$1"
             ;;
         -n|--notebooks)
             shift
@@ -193,7 +199,7 @@ curl -s -o $badge_dir/failing.$bxt $web_dir/failing.$bxt
 curl -s -o $badge_dir/passing.$bxt $web_dir/passing.$bxt
 
 # Get the list of available notebooks:
-notebooks=`find . -path '*/.ipynb_checkpoints/*' -prune -o -name "${notebook_name}.ipynb" -print`
+notebooks=`find "${notebook_dir}" -path '*/.ipynb_checkpoints/*' -prune -o -name "${notebook_name}.ipynb" -print`
 echo "$notebooks"
 
 # Now loop over notebooks, running them one by one:
