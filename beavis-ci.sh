@@ -22,6 +22,7 @@
 #   -n --notebooks   Run on notebooks that match this. Default is '*'
 #   -w --working-dir Working directory. Default is '.beavis'
 #   -j --jupyter     Full path to jupyter executable
+#   --no-clone       Reuse a previous clone of the respository and pull the specified branch. Otherwise clone as usual.
 #   --no-commit      Only run the notebooks, do not commit any output
 #   --push           Force push the results to the "rendered" branch. Only work if you have push permission
 #   --html           Make html outputs instead
@@ -71,6 +72,7 @@
 # ======================================================================
 
 help=0
+clone=1
 commit=1
 push=0
 html=0
@@ -87,6 +89,9 @@ while [ $# -gt 0 ]; do
     case $key in
         -h|--help)
             help=1
+            ;;
+        --no-clone)
+            clone=0
             ;;
         --no-commit)
             commit=0
@@ -135,22 +140,36 @@ fi
 date
 original_pwd=`pwd`
 echo "Welcome to beavis-ci: occasional integration and testing"
-echo "Cloning ${repo}/${branch} into the ${working_dir} workspace:"
 
-# Check out a fresh clone in a temporary hidden folder, over-writing
-# any previous edition:
 mkdir -p ${working_dir}
 cd ${working_dir}
 repo_dir=`basename $repo`
-rm -rf ${repo_dir}
-git clone -b ${branch} git@github.com:${repo}.git
-if [ -e $repo_dir ]; then
-    cd $repo_dir
-    repo_full_path=`pwd`
-else
-    echo "Failed to clone ${repo}/${branch}! Abort!"
-    exit 1
+if [ $clone -eq 0 ]; then
+    # Check for an existing clone.
+    if [ -e $repo_dir ]; then
+        cd $repo_dir
+        git checkout -q ${branch}
+        git pull
+    else
+        # Fall back to checking out a fresh clone.
+        echo "No previous clone found"
+        clone=1
+    fi
 fi
+if [ $clone -eq 1 ]; then
+    # Check out a fresh clone in a temporary hidden folder, over-writing
+    # any previous edition:
+    echo "Cloning ${repo}/${branch} into the ${working_dir} workspace:"
+    rm -rf ${repo_dir}
+    git clone -b ${branch} git@github.com:${repo}.git
+    if [ -e $repo_dir ]; then
+        cd $repo_dir
+    else
+        echo "Failed to clone ${repo}/${branch}! Abort!"
+        exit 1
+    fi
+fi
+repo_full_path=`pwd`
 
 # set target output branch
 target="${output_branch_default}"
