@@ -109,7 +109,7 @@ while [ $# -gt 0 ]; do
             png=1
             ;;
         --no-summary)
-            summary=1
+            summary=0
             ;;
         -b|--branch)
             shift
@@ -210,6 +210,28 @@ else
     kernel_option="--ExecutePreprocessor.kernel_name=$kernel"
 fi
 
+# Initialize summary table.
+if [ $summary -eq 1 ]; then
+    echo "Preparing top-level summary table."
+    cd $repo_full_path
+    sumout="summary.md"
+    cat <<EOT > $sumout
+# Notebook test results for '${branch}' branch of ${repo}
+
+Prepared using [beavis-ci](https://github.com/LSSTDESC/beavis-ci) on $(date) as:
+\`\`\`
+$cmdline
+\`\`\`
+
+Click on a notebook name to view the rendered notebook.
+
+Click on a status badge to view the corresponding log.
+
+| Notebook | Status | Exception |
+|----------|--------|-----------|
+EOT
+fi
+
 # We'll need some badges:
 badge_dir='.badges'
 web_dir='https://raw.githubusercontent.com/LSSTDESC/beavis-ci/master/badges/'
@@ -258,29 +280,19 @@ for notebook in $notebooks; do
         SUCCESS=0
     fi
 
+    if [ $summary -eq 1 ]; then
+        # Strip leading ./ from dir
+        name="${filedir#./}/${filename_noext}"
+        badge="[![status badge](${filedir}/${badgefile})](${filedir}/${logfile})"
+        if [ $SUCCESS -eq 0 ]; then
+            line="| ${name} | ${badge} | Unknown |"
+        else
+            line="| [${name}](${filedir}/${output}) | ${badge} | None |"
+        fi
+        echo "${line}" >> $sumout
+    fi
+
 done
-
-if [ $summary -eq 0]; then
-    sleep 0
-else
-    echo "Preparing top-level summary table."
-    sumout="summary.md"
-    cat <<EOT > $sumout
-# Notebook test results for '${branch}' branch of ${repo}
-
-Prepared using [beavis-ci](https://github.com/LSSTDESC/beavis-ci) on $(date) as:
-\`\`\`
-$cmdline
-\`\`\`
-
-Click on a notebook name to view the rendered notebook.
-
-Click on a status badge to view the corresponding log.
-
-| Notebook | Status | Exception |
-|----------|--------|-----------|
-EOT
-fi
 
 if [ $commit -eq 0 ]; then
     sleep 0
@@ -301,6 +313,9 @@ else
         git add -f "${logs[@]}"
     else
         echo "No log files to add."
+    fi
+    if [ $summary -eq 1 ]; then
+        git add -f "${sumout}"
     fi
     git commit -m "Add rendered notebooks and log files"
     if [ $push -gt 0 ]; then
