@@ -258,16 +258,25 @@ if [ $commit -eq 0 ]; then
     sleep 0
 
 else
-    echo "Attempting to push the rendered outputs to GitHub in an orphan branch $target"
+    echo "Attempting to commit the rendered outputs to an orphan branch '$target'"
 
     cd $repo_full_path
     git branch -D $target >& /dev/null
     git checkout --orphan $target
     git rm -rf . >& /dev/null
-    git add -f "${outputs[@]}"
-    git add -f "${logs[@]}"
-    git commit -m "pushed rendered notebooks and log files"
+    if [ ${#outputs[@]} -gt 0 ]; then
+        git add -f "${outputs[@]}"
+    else
+        echo "No rendered notebooks to add."
+    fi
+    if [ ${#logs[@]} -gt 0 ]; then
+        git add -f "${logs[@]}"
+    else
+        echo "No log files to add."
+    fi
+    git commit -m "Add rendered notebooks and log files"
     if [ $push -gt 0 ]; then
+        echo "Attempting to push the orphan branch '$target' to GitHub"
         git push -q -f origin $target
     fi
 fi
