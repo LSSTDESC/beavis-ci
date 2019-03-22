@@ -24,7 +24,7 @@
 #   -j --jupyter     Full path to jupyter executable
 #   --no-clone       Reuse a previous clone of the respository and pull to update. Otherwise clone.
 #   --no-commit      Only run the notebooks, do not commit any output
-#   --push           Force push the results to the "rendered" branch. Only work if you have push permission
+#   --push           Force push the results to the "rendered" branch. Only works if you have push permission.
 #   --html           Make html outputs instead
 #   --png            Use PNG badges rather than SVG ones
 #
@@ -274,7 +274,7 @@ fi
 
 echo "beavis-ci finished!"
 if [ $SUCCESS -eq 0 ]; then
-    echo "WARNING: Some notebooks did not rendered successfully!"
+    echo "WARNING: Some notebooks did not render successfully!"
 fi
 if [ $push -gt 0 ]; then
     echo "View results at https://github.com/${repo}/tree/${target}/"
