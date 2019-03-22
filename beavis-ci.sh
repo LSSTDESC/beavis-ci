@@ -223,9 +223,9 @@ Prepared using [beavis-ci](https://github.com/LSSTDESC/beavis-ci) on $(date) as:
 $cmdline
 \`\`\`
 
-Click on a notebook name to view the rendered notebook.
+Notebook names are linked to rendered outputs (when they are successfully created).
 
-Click on a status badge to view the corresponding log.
+Click on a status badge to view the corresponding log output.
 
 | Notebook | Status | Exception |
 |----------|--------|-----------|
