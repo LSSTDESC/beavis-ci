@@ -22,8 +22,10 @@
 #   -n --notebooks   Run on notebooks that match this. Default is '*'
 #   -w --working-dir Working directory. Default is '.beavis'
 #   -j --jupyter     Full path to jupyter executable
+#   --no-summary     Do not produce a top-level summary table.
+#   --no-clone       Reuse a previous clone of the respository and pull to update. Otherwise clone.
 #   --no-commit      Only run the notebooks, do not commit any output
-#   --push           Force push the results to the "rendered" branch. Only work if you have push permission
+#   --push           Force push the results to the "rendered" branch. Only works if you have push permission.
 #   --html           Make html outputs instead
 #   --png            Use PNG badges rather than SVG ones
 #
@@ -71,10 +73,12 @@
 # ======================================================================
 
 help=0
+clone=1
 commit=1
 push=0
 html=0
 png=0
+summary=1
 src="$0"
 branch='master'
 output_branch_default='rendered'
@@ -82,11 +86,15 @@ notebook_name='*'
 working_dir='.beavis'
 jupyter=$( command -v jupyter || echo '/usr/common/software/python/3.6-anaconda-4.4/bin/jupyter' )
 
+cmdline="$0 $@"
 while [ $# -gt 0 ]; do
     key="$1"
     case $key in
         -h|--help)
             help=1
+            ;;
+        --no-clone)
+            clone=0
             ;;
         --no-commit)
             commit=0
@@ -99,6 +107,9 @@ while [ $# -gt 0 ]; do
             ;;
         --png)
             png=1
+            ;;
+        --no-summary)
+            summary=0
             ;;
         -b|--branch)
             shift
@@ -135,22 +146,36 @@ fi
 date
 original_pwd=`pwd`
 echo "Welcome to beavis-ci: occasional integration and testing"
-echo "Cloning ${repo}/${branch} into the ${working_dir} workspace:"
 
-# Check out a fresh clone in a temporary hidden folder, over-writing
-# any previous edition:
 mkdir -p ${working_dir}
 cd ${working_dir}
 repo_dir=`basename $repo`
-rm -rf ${repo_dir}
-git clone -b ${branch} git@github.com:${repo}.git
-if [ -e $repo_dir ]; then
-    cd $repo_dir
-    repo_full_path=`pwd`
-else
-    echo "Failed to clone ${repo}/${branch}! Abort!"
-    exit 1
+if [ $clone -eq 0 ]; then
+    # Check for an existing clone.
+    if [ -e $repo_dir ]; then
+        cd $repo_dir
+        git checkout -q ${branch}
+        git pull
+    else
+        # Fall back to checking out a fresh clone.
+        echo "No previous clone found"
+        clone=1
+    fi
 fi
+if [ $clone -eq 1 ]; then
+    # Check out a fresh clone in a temporary hidden folder, over-writing
+    # any previous edition:
+    echo "Cloning ${repo}/${branch} into the ${working_dir} workspace:"
+    rm -rf ${repo_dir}
+    git clone -b ${branch} git@github.com:${repo}.git
+    if [ -e $repo_dir ]; then
+        cd $repo_dir
+    else
+        echo "Failed to clone ${repo}/${branch}! Abort!"
+        exit 1
+    fi
+fi
+repo_full_path=`pwd`
 
 # set target output branch
 target="${output_branch_default}"
@@ -183,6 +208,28 @@ if [ -z $kernel ]; then
     kernel_option=""
 else
     kernel_option="--ExecutePreprocessor.kernel_name=$kernel"
+fi
+
+# Initialize summary table.
+if [ $summary -eq 1 ]; then
+    echo "Preparing top-level summary table."
+    cd $repo_full_path
+    sumout="summary.md"
+    cat <<EOT > $sumout
+# Notebook test results for '${branch}' branch of ${repo}
+
+Prepared using [beavis-ci](https://github.com/LSSTDESC/beavis-ci) on $(date) as:
+\`\`\`
+$cmdline
+\`\`\`
+
+Notebook names are linked to rendered outputs (when they are successfully created).
+
+Click on a status badge to view the corresponding log output.
+
+| Notebook | Status | Exception |
+|----------|--------|-----------|
+EOT
 fi
 
 # We'll need some badges:
@@ -233,29 +280,53 @@ for notebook in $notebooks; do
         SUCCESS=0
     fi
 
+    if [ $summary -eq 1 ]; then
+        # Strip leading ./ from dir
+        name="${filedir#./}/${filename_noext}"
+        badge="[![status badge](${filedir}/${badgefile})](${filedir}/${logfile})"
+        if [ $SUCCESS -eq 0 ]; then
+            line="| ${name} | ${badge} | Unknown |"
+        else
+            line="| [${name}](${filedir}/${output}) | ${badge} | None |"
+        fi
+        echo "${line}" >> $sumout
+    fi
+
 done
 
 if [ $commit -eq 0 ]; then
     sleep 0
 
 else
-    echo "Attempting to push the rendered outputs to GitHub in an orphan branch $target"
+    echo "Attempting to commit the rendered outputs to an orphan branch '$target'"
 
     cd $repo_full_path
     git branch -D $target >& /dev/null
     git checkout --orphan $target
     git rm -rf . >& /dev/null
-    git add -f "${outputs[@]}"
-    git add -f "${logs[@]}"
-    git commit -m "pushed rendered notebooks and log files"
+    if [ ${#outputs[@]} -gt 0 ]; then
+        git add -f "${outputs[@]}"
+    else
+        echo "No rendered notebooks to add."
+    fi
+    if [ ${#logs[@]} -gt 0 ]; then
+        git add -f "${logs[@]}"
+    else
+        echo "No log files to add."
+    fi
+    if [ $summary -eq 1 ]; then
+        git add -f "${sumout}"
+    fi
+    git commit -m "Add rendered notebooks and log files"
     if [ $push -gt 0 ]; then
+        echo "Attempting to push the orphan branch '$target' to GitHub"
         git push -q -f origin $target
     fi
 fi
 
 echo "beavis-ci finished!"
 if [ $SUCCESS -eq 0 ]; then
-    echo "WARNING: Some notebooks did not rendered successfully!"
+    echo "WARNING: Some notebooks did not render successfully!"
 fi
 if [ $push -gt 0 ]; then
     echo "View results at https://github.com/${repo}/tree/${target}/"
