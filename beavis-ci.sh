@@ -22,7 +22,7 @@
 #   -n --notebooks   Run on notebooks that match this. Default is '*'
 #   -w --working-dir Working directory. Default is '.beavis'
 #   -j --jupyter     Full path to jupyter executable
-#   --no-clone       Reuse a previous clone of the respository and pull the specified branch. Otherwise clone as usual.
+#   --no-clone       Reuse a previous clone of the respository and pull to update. Otherwise clone.
 #   --no-commit      Only run the notebooks, do not commit any output
 #   --push           Force push the results to the "rendered" branch. Only work if you have push permission
 #   --html           Make html outputs instead
