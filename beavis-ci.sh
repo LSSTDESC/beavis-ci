@@ -22,6 +22,7 @@
 #   -n --notebooks   Run on notebooks that match this. Default is '*'
 #   -w --working-dir Working directory. Default is '.beavis'
 #   -j --jupyter     Full path to jupyter executable
+#   --no-summary     Do not produce a top-level summary table.
 #   --no-clone       Reuse a previous clone of the respository and pull to update. Otherwise clone.
 #   --no-commit      Only run the notebooks, do not commit any output
 #   --push           Force push the results to the "rendered" branch. Only works if you have push permission.
@@ -77,6 +78,7 @@ commit=1
 push=0
 html=0
 png=0
+summary=1
 src="$0"
 branch='master'
 output_branch_default='rendered'
@@ -84,6 +86,7 @@ notebook_name='*'
 working_dir='.beavis'
 jupyter=$( command -v jupyter || echo '/usr/common/software/python/3.6-anaconda-4.4/bin/jupyter' )
 
+cmdline="$0 $@"
 while [ $# -gt 0 ]; do
     key="$1"
     case $key in
@@ -104,6 +107,9 @@ while [ $# -gt 0 ]; do
             ;;
         --png)
             png=1
+            ;;
+        --no-summary)
+            summary=1
             ;;
         -b|--branch)
             shift
@@ -253,6 +259,28 @@ for notebook in $notebooks; do
     fi
 
 done
+
+if [ $summary -eq 0]; then
+    sleep 0
+else
+    echo "Preparing top-level summary table."
+    sumout="summary.md"
+    cat <<EOT > $sumout
+# Notebook test results for '${branch}' branch of ${repo}
+
+Prepared using [beavis-ci](https://github.com/LSSTDESC/beavis-ci) on $(date) as:
+\`\`\`
+$cmdline
+\`\`\`
+
+Click on a notebook name to view the rendered notebook.
+
+Click on a status badge to view the corresponding log.
+
+| Notebook | Status | Exception |
+|----------|--------|-----------|
+EOT
+fi
 
 if [ $commit -eq 0 ]; then
     sleep 0
