@@ -187,7 +187,7 @@ fi
 
 # We'll need some badges:
 badge_dir='.badges'
-web_dir='https://raw.githubusercontent.com/LSSTDESC/beavis-ci/master/badges/'
+web_dir='https://raw.githubusercontent.com/LSSTDESC/beavis-ci/master/badges'
 mkdir -p $badge_dir
 curl -s -o $badge_dir/failing.$bxt $web_dir/failing.$bxt
 curl -s -o $badge_dir/passing.$bxt $web_dir/passing.$bxt
