@@ -82,7 +82,7 @@ output_branch_default='rendered'
 notebook_name='*'
 notebook_dir='.'
 working_dir='.beavis'
-jupyter=$( command -v jupyter || echo '/usr/common/software/python/3.6-anaconda-4.4/bin/jupyter' )
+jupyter=$( command -v jupyter || echo '/usr/common/software/python/3.7-anaconda-2019.10/bin/jupyter' )
 
 while [ $# -gt 0 ]; do
     key="$1"
