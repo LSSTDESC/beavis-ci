@@ -193,12 +193,14 @@ fi
 
 # We'll need some badges:
 badge_dir='.badges'
-web_dir='https://raw.githubusercontent.com/LSSTDESC/beavis-ci/master/badges/'
+web_dir='https://raw.githubusercontent.com/LSSTDESC/beavis-ci/master/badges'
 mkdir -p $badge_dir
 curl -s -o $badge_dir/failing.$bxt $web_dir/failing.$bxt
 curl -s -o $badge_dir/passing.$bxt $web_dir/passing.$bxt
 
 # Get the list of available notebooks:
+OIFS="$IFS"
+IFS=$'\n'
 notebooks=`find "${notebook_dir}" -path '*/.ipynb_checkpoints/*' -prune -o -name "${notebook_name}.ipynb" -print`
 echo "$notebooks"
 
@@ -240,6 +242,7 @@ for notebook in $notebooks; do
     fi
 
 done
+IFS="$OIFS"
 
 if [ $commit -eq 0 ]; then
     sleep 0
